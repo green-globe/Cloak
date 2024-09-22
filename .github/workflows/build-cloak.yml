@@ -1,0 +1,80 @@
+name: Build Cloak Shared Libraries
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      NDK_VERSION: r25c
+      GO_VERSION: "1.21.1"
+
+    steps:
+      - name: Checkout Cloak repository
+        uses: actions/checkout@v3
+        with:
+          repository: cbeuw/Cloak
+          ref: master # You can specify a commit or tag if needed
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Download and set up Android NDK
+        run: |
+          echo "Downloading Android NDK..."
+          NDK_VERSION=${{ env.NDK_VERSION }}
+          wget https://dl.google.com/android/repository/android-ndk-$NDK_VERSION-linux.zip -O android-ndk.zip
+          unzip -q android-ndk.zip -d $HOME
+          export ANDROID_NDK_HOME=$HOME/android-ndk-$NDK_VERSION
+          echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME" >> $GITHUB_ENV
+          echo "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
+
+      - name: Build Cloak for arm64-v8a
+        env:
+          CC: aarch64-linux-android21-clang
+          GOOS: android
+          GOARCH: arm64
+          CGO_ENABLED: 1
+        run: |
+          mkdir -p build/arm64-v8a
+          go build -buildmode=c-shared -o build/arm64-v8a/libcloak.so
+
+      - name: Build Cloak for armeabi-v7a
+        env:
+          CC: armv7a-linux-androideabi21-clang
+          GOOS: android
+          GOARCH: arm
+          CGO_ENABLED: 1
+        run: |
+          mkdir -p build/armeabi-v7a
+          go build -buildmode=c-shared -o build/armeabi-v7a/libcloak.so
+
+      - name: Build Cloak for x86
+        env:
+          CC: i686-linux-android21-clang
+          GOOS: android
+          GOARCH: 386
+          CGO_ENABLED: 1
+        run: |
+          mkdir -p build/x86
+          go build -buildmode=c-shared -o build/x86/libcloak.so
+
+      - name: Build Cloak for x86_64
+        env:
+          CC: x86_64-linux-android21-clang
+          GOOS: android
+          GOARCH: amd64
+          CGO_ENABLED: 1
+        run: |
+          mkdir -p build/x86_64
+          go build -buildmode=c-shared -o build/x86_64/libcloak.so
+
+      - name: Upload Cloak shared libraries
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloak-shared-libraries
+          path: build/
