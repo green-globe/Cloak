@@ -12,12 +12,15 @@ jobs:
       GO_VERSION: "1.21.1"
 
     steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+
       - name: Checkout Cloak repository
         uses: actions/checkout@v4
         with:
           repository: cbeuw/Cloak
           ref: master
-          path: Cloak
+          path: CloakSrc
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -30,12 +33,11 @@ jobs:
           NDK_VERSION=${{ env.NDK_VERSION }}
           wget https://dl.google.com/android/repository/android-ndk-$NDK_VERSION-linux.zip -O android-ndk.zip
           unzip -q android-ndk.zip -d $HOME
-          export ANDROID_NDK_HOME=$HOME/android-ndk-$NDK_VERSION
-          echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME" >> $GITHUB_ENV
-          echo "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
+          echo "ANDROID_NDK_HOME=$HOME/android-ndk-$NDK_VERSION" >> $GITHUB_ENV
+          echo "$HOME/android-ndk-$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
 
       - name: Build Cloak for arm64-v8a
-        working-directory: Cloak
+        working-directory: CloakSrc
         env:
           CC: aarch64-linux-android21-clang
           GOOS: android
@@ -46,7 +48,7 @@ jobs:
           go build -buildmode=c-shared -o ../build/arm64-v8a/libcloak.so
 
       - name: Build Cloak for armeabi-v7a
-        working-directory: Cloak
+        working-directory: CloakSrc
         env:
           CC: armv7a-linux-androideabi21-clang
           GOOS: android
@@ -57,7 +59,7 @@ jobs:
           go build -buildmode=c-shared -o ../build/armeabi-v7a/libcloak.so
 
       - name: Build Cloak for x86
-        working-directory: Cloak
+        working-directory: CloakSrc
         env:
           CC: i686-linux-android21-clang
           GOOS: android
@@ -68,7 +70,7 @@ jobs:
           go build -buildmode=c-shared -o ../build/x86/libcloak.so
 
       - name: Build Cloak for x86_64
-        working-directory: Cloak
+        working-directory: CloakSrc
         env:
           CC: x86_64-linux-android21-clang
           GOOS: android
